@@ -151,6 +151,7 @@ class WebsocketProtocol(Protocol):
             data: 服务器返回的 hello 消息数据
         """
         try:
+            print(f"服务器回应：{data}")
             # 验证传输方式
             transport = data.get("transport")
             if not transport or transport != "websocket":

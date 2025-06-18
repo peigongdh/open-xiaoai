@@ -247,6 +247,12 @@ class XiaoZhi:
                 self._handle_stt_message(data)
             elif msg_type == "llm":
                 self._handle_llm_message(data)
+            elif msg_type == 'audio':
+                self._handle_audio_message(data)
+            elif msg_type == 'mcp':
+                self._handle_mcp_message(data)
+            else:
+                print(f"未知消息类型：{msg_type}")
         except Exception:
             pass
 
@@ -254,16 +260,17 @@ class XiaoZhi:
         """处理TTS消息"""
         state = data.get("state", "")
         if state == "start":
+            print(f"服务器开始发送语音")
             EventManager.on_tts_start(data.get("session_id"))
             self.schedule(lambda: self._handle_tts_start())
         elif state == "stop":
+            print(f"服务器语音传输结束")
             EventManager.on_tts_end(data.get("session_id"))
             self.schedule(lambda: self._handle_tts_stop())
         elif state == "sentence_start":
             text = data.get("text", "")
+            print(f"服务器发送语音段：{text}")
             if text:
-                print(f"🤖 小智：{text}")
-
                 verification_code = re.search(r"验证码.*?(\d+)", text) or re.search(
                     r"控制面板.*?(\d+)", text
                 )
@@ -273,6 +280,9 @@ class XiaoZhi:
                     )
 
                 self.schedule(lambda: self.set_chat_message("assistant", text))
+        elif state == "sentence_end":
+            text = data.get("text", "")
+            print(f"语音段结束：{text}")
 
     def _handle_tts_start(self):
         """处理TTS开始事件"""
@@ -290,14 +300,24 @@ class XiaoZhi:
         """处理STT消息"""
         text = data.get("text", "")
         if text:
-            print(f"💬 我说：{text}")
+            print(f"识别结果：{text}")
             self.schedule(lambda: self.set_chat_message("user", text))
 
     def _handle_llm_message(self, data):
         """处理LLM消息"""
+        print(f"大模型回复：{data.get('text', '')}")
         emotion = data.get("emotion", "")
         if emotion:
             self.schedule(lambda: self.set_emotion(emotion))
+
+    def _handle_audio_message(self, data):
+        """处理audio消息"""
+        print(f"收到音频控制消息：{data}")
+
+    def _handle_mcp_message(self, data):
+        """处理audio消息"""
+        print(f"服务器下发：{data}")
+        # todo
 
     async def _on_audio_channel_opened(self):
         """音频通道打开回调"""
