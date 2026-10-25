@@ -1,0 +1,60 @@
+services:
+  open-xiaoai-xiaozhi:
+    image: idootop/open-xiaoai-xiaozhi@sha256:02024eb540c7ad204fcc6fab1eb6d52096e7b0f69aabb342a276178bdf04b645
+    restart: unless-stopped
+    init: true
+    user: "1000:1000"
+    stop_signal: SIGINT
+    stop_grace_period: 30s
+    ports:
+      - "192.168.31.109:4399:4399"
+    environment:
+      CLI: "true"
+      TZ: Asia/Shanghai
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      # Device identity / activation code are written back by the application.
+      - type: bind
+        source: /srv/homelab/data/open-xiaoai-xiaozhi/config.py
+        target: /app/config.py
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /srv/homelab/data/open-xiaoai-xiaozhi/keywords.txt
+        target: /app/xiaozhi/models/keywords.txt
+        bind:
+          create_host_path: false
+      # Fixed release copies, never the mutable development checkout.
+      - type: bind
+        source: ${PATCH_ROOT:?fixed OTA authentication patch directory required}/config.py
+        target: /app/xiaozhi/utils/config.py
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${PATCH_ROOT}/websocket_protocol.py
+        target: /app/xiaozhi/services/protocols/websocket_protocol.py
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      # A WebSocket handshake would occupy the single speaker connection.
+      test:
+        - CMD
+        - /app/.venv/bin/python
+        - -c
+        - "from pathlib import Path; assert any(row.split()[1].endswith(':112F') and row.split()[3] == '0A' for name in ('tcp', 'tcp6') for row in Path('/proc/net/' + name).read_text().splitlines()[1:])"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    mem_limit: 2g
+    cpus: 4
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

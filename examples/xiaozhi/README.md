@@ -2,6 +2,8 @@
 
 [Open-XiaoAI](https://github.com/idootop/open-xiaoai) 的 Python 版 Server 端，用来演示小爱音箱接入[小智 AI](https://github.com/78/xiaozhi-esp32)。
 
+本工作区的常驻部署使用 Dockge，当前局域网地址、运行配置与操作说明见 [Home Lab 部署](../../docs/DOCKGE-XIAOZHI.md)。
+
 > [!IMPORTANT]
 > 本项目只是一个简单的演示程序，抛砖引玉。诸如一些音频压缩、加密传输、多账号管理等功能并未提供，建议只在局域网内测试运行，不推荐部署在公网服务器上（消耗流量 100kb/s），请自行评估相关风险，合理使用。
 

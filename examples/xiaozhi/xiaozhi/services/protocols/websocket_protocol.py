@@ -43,6 +43,14 @@ class WebsocketProtocol(Protocol):
         try:
             await self._close_websocket()
 
+            # OTA 令牌有有效期且绑定 Client-Id，重连时获取新令牌。
+            # requests 是同步客户端，在线程中执行以免阻塞音频事件循环。
+            await asyncio.to_thread(self.config.refresh_network_config)
+            self.WEBSOCKET_URL = self.config.get_config("NETWORK.WEBSOCKET_URL")
+            self.WEBSOCKET_ACCESS_TOKEN = self.config.get_config(
+                "NETWORK.WEBSOCKET_ACCESS_TOKEN"
+            )
+
             # 在连接时创建 Event，确保在正确的事件循环中
             self.hello_received = asyncio.Event()
 

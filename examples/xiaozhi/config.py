@@ -37,13 +37,7 @@ APP_CONFIG = {
     "wakeup": {
         # 自定义唤醒词列表（英文字母要全小写）
         "keywords": [
-            "天猫精灵",
-            "小度小度",
-            "豆包豆包",
-            "你好小智",
-            "你好小爱",
-            "hi siri",
-            "hey siri",
+            "三零五幺",
         ],
         # 静音多久后自动退出唤醒（秒）
         "timeout": 20,
@@ -61,8 +55,8 @@ APP_CONFIG = {
         "min_silence_duration": 500,
     },
     "xiaozhi": {
-        "OTA_URL": "https://api.tenclass.net/xiaozhi/ota/",
-        "WEBSOCKET_URL": "wss://api.tenclass.net/xiaozhi/v1/",
+        "OTA_URL": "http://192.168.31.109:8002/xiaozhi/ota/",
+        "WEBSOCKET_URL": "ws://192.168.31.109:8000/xiaozhi/v1/",
         "WEBSOCKET_ACCESS_TOKEN": "", #（可选）一般用不到这个值
         "VERIFICATION_CODE": "", # 首次对话时，验证码会在这里更新
         "DEVICE_ID": "", # 如果没有提示绑定设备，则将 DEVICE_ID 清空后，重启应用再次尝试

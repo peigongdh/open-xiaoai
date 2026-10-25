@@ -144,23 +144,27 @@ class ConfigManager:
             self._initialize_mqtt_info()
 
     def _initialize_mqtt_info(self):
+        self.refresh_network_config()
+        return self.get_config("MQTT_INFO")
+
+    def refresh_network_config(self) -> bool:
+        """刷新 OTA 连接信息；失败时保留手动配置或上次成功的配置。"""
         try:
             mqtt_info = self._get_ota_version()
             if mqtt_info:
                 self.update_config("MQTT_INFO", mqtt_info)
-                return mqtt_info
-            else:
-                return self.get_config("MQTT_INFO")
+            return True
         except Exception:
-            return self.get_config("MQTT_INFO")
+            return False
 
     def _get_ota_version(self):
-        """获取OTA服务器的MQTT信息"""
+        """获取 OTA 的 MQTT、WebSocket 连接信息和设备激活码。"""
         MAC_ADDR = self.get_device_id()
         OTA_URL = self.get_config("NETWORK.OTA_URL")
         headers = {
             "Activation-Version": "1",
             "Device-Id": MAC_ADDR,
+            "Client-Id": self.get_client_id(),
             "Content-Type": "application/json",
             "Accept-Language": "zh-CN",
         }
@@ -210,10 +214,34 @@ class ConfigManager:
             # 解析JSON数据
             response_data = response.json()
 
-            if "mqtt" in response_data:
-                return response_data["mqtt"]
-            else:
+            if not isinstance(response_data, dict) or not (
+                isinstance(response_data.get("mqtt"), dict)
+                or isinstance(response_data.get("websocket"), dict)
+            ):
                 raise ValueError("OTA服务器返回的数据无效，请检查服务器状态或MAC地址！")
+
+            websocket = response_data.get("websocket")
+            if isinstance(websocket, dict):
+                url = websocket.get("url")
+                if isinstance(url, str) and url.startswith(("ws://", "wss://")):
+                    self.update_config("NETWORK.WEBSOCKET_URL", url)
+                token = websocket.get("token")
+                if isinstance(token, str):
+                    # 令牌与本进程的 Client-Id 绑定，只保存在内存中。
+                    self.update_config("NETWORK.WEBSOCKET_ACCESS_TOKEN", token)
+
+            activation = response_data.get("activation")
+            if isinstance(activation, dict):
+                code = activation.get("code")
+                if (
+                    isinstance(code, str)
+                    and re.fullmatch(r"[0-9]+", code)
+                    and code != self.get_config("NETWORK.VERIFICATION_CODE")
+                ):
+                    self.update_config_file("VERIFICATION_CODE", code)
+                    self.update_config("NETWORK.VERIFICATION_CODE", code)
+
+            return response_data.get("mqtt")
         except requests.Timeout:
             raise ValueError("OTA请求超时！请稍后重试。")
         except requests.RequestException:
